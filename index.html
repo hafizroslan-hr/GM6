@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#11132b"><title>Honda City GM6 — Sport Explorer</title><style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#14152d;color:#fff;font-family:system-ui,-apple-system,sans-serif}canvas{display:block;touch-action:none}header{position:fixed;top:env(safe-area-inset-top);left:0;padding:20px;pointer-events:none}header strong{font-size:19px;letter-spacing:.13em}header small{display:block;color:#91e7ff;letter-spacing:.18em;margin-top:5px}.controls{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:12px;right:12px;background:#111b39e8;border:1px solid #7cbeff65;border-radius:20px;padding:17px;backdrop-filter:blur(18px);box-shadow:0 8px 50px #0007}.row{display:flex;align-items:center;justify-content:space-between}.row b{font-size:24px;color:#86e9ff}input{width:100%;margin:15px 0;accent-color:#65dfff}.buttons{display:flex;gap:8px}button{flex:1;background:#243b66;color:#fff;border:1px solid #78b5ed66;border-radius:11px;padding:12px 6px;font-size:12px;font-weight:700}button.active{background:#147eaa}.hint{text-align:center;font-size:11px;opacity:.7;margin-top:13px}.fallback{position:fixed;top:38%;width:100%;padding:20px;text-align:center;display:none}</style></head>
+<body><header><strong>HONDA CITY GM6</strong><small>SPORT EXPLORER // 360°</small></header><div id="stage"></div><div id="fallback" class="fallback">Unable to load the 3D engine. Check your internet connection and refresh.</div><section class="controls"><div class="row"><span>PROPULSION OUTPUT</span><b id="readout">35%</b></div><input type="range" min="0" max="100" value="35" id="throttle" aria-label="Propulsion output"><div class="buttons"><button id="boost">BOOST</button><button id="orbit" class="active">AUTO ORBIT</button><button id="mode" class="active">SPACE MODE</button></div><div class="hint">Drag to rotate 360° · Pinch to zoom · Increase propulsion for energy trails</div></section>
+<script type="module">
+try {
+const T=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
+const scene=new T.Scene();scene.background=new T.Color(0x303462);scene.fog=new T.FogExp2(0x303462,.022);
+const camera=new T.PerspectiveCamera(43,innerWidth/innerHeight,.1,150);
+const renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;document.getElementById('stage').appendChild(renderer.domElement);
+scene.add(new T.HemisphereLight(0xe8f1ff,0x292448,3));const sun=new T.DirectionalLight(0xffffff,3.6);sun.position.set(-6,9,6);scene.add(sun);const accent=new T.PointLight(0x70b9ff,100);accent.position.set(4,5,-5);scene.add(accent);
+const mat=(color,metalness=.5,roughness=.25)=>new T.MeshStandardMaterial({color,metalness,roughness});const white=mat(0xf3f6ff,.65,.19),glass=mat(0x091a2c,.65,.12),metal=mat(0x8392ad,.85,.17),cyan=new T.MeshBasicMaterial({color:0x50dfff}),red=new T.MeshBasicMaterial({color:0xff3158});
+const car=new T.Group();scene.add(car);
+function add(geo,m,x,y,z,parent=car){const o=new T.Mesh(geo,m);o.position.set(x,y,z);parent.add(o);return o}
+function box(w,h,d,m,x,y,z,parent){return add(new T.BoxGeometry(w,h,d),m,x,y,z,parent)}
+function ell(x,y,z,w,h,d,m){const o=add(new T.SphereGeometry(1,36,20),m,x,y,z);o.scale.set(w,h,d);return o}
+ell(0,1.17,0,2.05,.55,3.55,white);box(3.4,.43,6.5,white,0,1.17,0);
+ell(0,1.78,-.2,1.68,.76,2.2,glass);ell(0,2.32,-.2,1.52,.14,2.0,white);
+box(2.8,.12,.14,glass,0,1.37,3.38);box(1.45,.1,.08,metal,0,1.38,3.47);
+box(2.8,.12,.1,red,0,1.42,-3.34);
+for(const s of [-1,1]){box(.88,.08,.24,cyan,s*1.11,1.5,3.26);box(.08,.1,4.8,cyan,s*1.81,.94,0)}
+const wheels=new T.Group();car.add(wheels);
+for(const s of [-1,1])for(const z of [-2.18,2.18]){let w=add(new T.CylinderGeometry(.59,.59,.25,36),glass,s*1.65,.7,z,wheels);w.rotation.z=Math.PI/2;let r=add(new T.CylinderGeometry(.35,.35,.28,20),metal,s*1.66,.7,z,wheels);r.rotation.z=Math.PI/2}
+const engines=[],beams=[],sparks=[];
+for(const s of [-1,1]){const group=new T.Group();group.position.set(s*1.2,1.17,-3.4);car.add(group);engines.push(group);
+const shell=add(new T.CylinderGeometry(.53,.53,.84,48),metal,0,0,-.17,group);shell.rotation.x=Math.PI/2;
+const center=add(new T.CylinderGeometry(.38,.38,.85,48),glass,0,0,-.17,group);center.rotation.x=Math.PI/2;
+add(new T.TorusGeometry(.42,.09,12,48),cyan,0,0,-.62,group);
+const beam=add(new T.ConeGeometry(.33,3.5,32,1,true),new T.MeshBasicMaterial({color:0x50dfff,transparent:true,opacity:.45,side:T.DoubleSide,depthWrite:false}),0,0,-2.4,group);beam.rotation.x=-Math.PI/2;beams.push(beam);
+for(let i=0;i<22;i++){const spark=add(new T.SphereGeometry(.025,7,7),cyan,0,0,-1,group);sparks.push({spark,seed:Math.random()})}}
+const floor=add(new T.PlaneGeometry(180,180),mat(0x42467c,.65,.24),0,-.23,0,scene);floor.rotation.x=-Math.PI/2;const ring=add(new T.TorusGeometry(6,.035,8,120),cyan,0,-.18,0,scene);ring.rotation.x=Math.PI/2;
+let power=35,boost=false,auto=true,space=true,theta=.7,phi=1.16,radius=11,drag=false,px=0,py=0,pinch=0;wheels.visible=false;
+document.getElementById('throttle').oninput=e=>{power=+e.target.value;document.getElementById('readout').textContent=power+'%'};
+document.getElementById('boost').onclick=e=>{boost=!boost;e.target.classList.toggle('active',boost)};
+document.getElementById('orbit').onclick=e=>{auto=!auto;e.target.classList.toggle('active',auto)};
+document.getElementById('mode').onclick=e=>{space=!space;e.target.classList.toggle('active',space);e.target.textContent=space?'SPACE MODE':'ROAD MODE';wheels.visible=!space;engines.forEach(x=>x.visible=space)};
+const canvas=renderer.domElement;
+canvas.onpointerdown=e=>{drag=true;px=e.clientX;py=e.clientY;auto=false;document.getElementById('orbit').classList.remove('active');canvas.setPointerCapture(e.pointerId)};
+canvas.onpointermove=e=>{if(!drag)return;theta-=(e.clientX-px)*.008;phi=Math.max(.28,Math.min(2.6,phi+(e.clientY-py)*.006));px=e.clientX;py=e.clientY};
+canvas.onpointerup=()=>drag=false;
+canvas.onwheel=e=>{radius=Math.max(6,Math.min(19,radius+e.deltaY*.01))};
+canvas.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinch)radius=Math.max(6,Math.min(19,radius+(pinch-d)*.015));pinch=d}},{passive:true});canvas.addEventListener('touchend',()=>pinch=0);
+const clock=new T.Clock();
+function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime(),p=(boost?100:power)/100;if(auto)theta+=.003;
+camera.position.set(radius*Math.sin(phi)*Math.sin(theta),radius*Math.cos(phi)+1.1,radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(0,1.3,0);
+car.position.y=space?.17+Math.sin(t*2)*.09:0;
+beams.forEach(b=>{b.visible=space&&p>.01;b.scale.setScalar(.45+p*1.75);b.material.opacity=.15+p*.5});
+sparks.forEach(({spark,seed})=>{spark.visible=space&&p>.04;const k=(t*(1+p*9)+seed*8)%8;spark.position.set(Math.sin(seed*80+t*4)*(.08+k*.055),Math.cos(seed*70+t*3)*(.08+k*.055),-1-k*(.3+p))});
+renderer.render(scene,camera)}
+animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+} catch(err){console.error(err);document.getElementById('fallback').style.display='block'}
+</script></body></html>
